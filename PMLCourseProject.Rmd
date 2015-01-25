@@ -1,0 +1,122 @@
+---
+title: "Practical Machine Learning - Course Project"
+author: "Eric Olson"
+date: "Saturday, January 24, 2015"
+output:
+  html_document:
+    keep_md: yes
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+```
+
+#### Executive Summary  
+Using datasets provided from personal fitness devices, a machine learning model is developed to predict in which of 5 manners a participant completed an exercise incorrectly.  That is, predicting which class a sample belongs to -- A, B, C, D, or E.  The datasets were cleaned and the total number of predicting features reduced from 160 to 52 in the final model. The training data was split 70/30 into training and testing sets. A random forest model with oob resampling was chosen and worked very well. The final model produced 100% accuracy for the final validation cases (20 total).  The   estimated OOB error rate was 0.82% (99.18% accuracy on the training data set).  The measured accuracy for the testing subset (cross-validation set) was 99.4%. Reducing ntree from the default of 500 to 100 had very little effect on the accuracy of the model or OOB error estimate, but reduced the run time by a factor of about 6.  
+
+
+#### Introduction
+There is a growing number of people wearing personal fitness devices to track physical activities. The devices typcially quantify how much of a particular activity is done, but they rarely quantify how well it is done. In this report, data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants are used. Participants were asked to perform barbell lifts correctly and incorrectly in 5 different ways. This data is then used to build models to classify and the predict in which of the 5 ways the participant incorrectly performed the activity. More information about the data is available from the website here: <http://groupware.les.inf.puc-rio.br/har> (see the section on the Weight Lifting Exercise Dataset).  
+
+#### Approach  
+Before building the model, the data set was examined to determine what it contained and what tidying was needed.  
+
+```{r, echo=TRUE, results='hide'}
+require(caret) # Used in building model later
+# Load the data and take a look
+traindata <- read.csv("./pml-training.csv", stringsAsFactors=FALSE)
+validation <- read.csv("./pml-testing.csv", stringsAsFactors=FALSE)  
+```
+
+```{r, echo=TRUE}
+dim(traindata)
+```
+
+Several steps were needed to prepare the training data for modeling:  
+
+1. Summary rows for each window were removed (new_window = yes), since they are not contained in the final test set, and cannot be included in the prediction model.  
+2. Columns that have no values (missing or NA, after step 1 is completed above) were removed.  
+3. Columns such as date, time, user name, which imply a structure to the data that is arbitrary and, therefore, unsuitable for a generalized prediction model, were also removed (the first 7 columns)  
+4. The classe is class "chr", convert to a factor variable for use with random forest model.
+
+```{r, echo=TRUE}
+traindata <- traindata[which(traindata$new_window=="no"),]
+traindata[traindata==""] <- NA
+traindata <- traindata[colSums(is.na(traindata))==0]
+traindata <- traindata[, 8:ncol(traindata)]
+traindata$classe <- as.factor(traindata$classe)
+dim(traindata)
+```
+
+The features (columns) have been reduced from 160 to 53 (52 predictors + 1 outcome (classe)).  For the final validation cases (20), the same columns as above were retained, with the exception that the problem_id column was removed.  
+```{r, echo=TRUE, results='hide'}
+keep <- colnames(traindata[1:ncol(traindata)-1]) # last column is problem_id
+validation <- validation[,keep]
+```  
+
+With the data in a tidy form, the training data was split into 2 sets: training (70%) / testing (30%), which provides a way of cross-validating the model and calculating OOB accuracy before predicting on the final validation set.  Also, the random seed was set for reproducibility.  
+
+```{r, echo=TRUE, results='hide'}
+set.seed(98102)
+inTrain = createDataPartition(traindata$classe, p = 0.7, list=FALSE)
+training = traindata[inTrain,]
+testing = traindata[-inTrain,]  # note, the original "testing" data was renamed "validation" (20 cases)
+``` 
+
+##### Model-Building
+Based on class discussions and the great performance of Random Forest models, especially for non-linear data, this was chosen as a starting point.  Initally, the default of ntree = 500 was used.  The resampling method (used to estimate OOB error rate) was set to "oob", which is recommended for random forest models.  If the training set were not split into training/testing sets, "cv" resampling with number = 3 (k-folds) might be more appropriate.  See <http://topepo.github.io/caret/training.html#custom>  
+
+```{r, echo=TRUE, cache=TRUE, results='hide'}
+trOpt <- trainControl(method="oob") # out-of-bag error estimate
+rfModl <- train(training$classe ~ . , method = "rf", trControl = trOpt, data = training) # ntree=500 (default)
+rfPred <- predict(rfModl, testing) # predict on cross-validation data
+rfCM <- confusionMatrix(testing$classe, rfPred) # check accuracy 
+rfVal<- predict(rfModl, validation) # Validation set (20 cases)
+``` 
+
+Refine model to reduce ntree to 100 (reduce time to run by factor of 6), and calculate same measures.
+```{r, echo=TRUE, cache=TRUE, results='hide'}
+set.seed(98102)
+trOpt2 <- trainControl(method="oob")
+rfModl2 <- train(training$classe ~ . , method = "rf", ntree = 100, trControl = trOpt2, data = training)
+rfPred2 <- predict(rfModl2, testing) # predict on cross-validation data
+rfCM2 <- confusionMatrix(testing$classe, rfPred2)
+rfVal2<- predict(rfModl2, validation)  # Validation set (20 cases)
+```
+
+#### Results
+
+Model 1: 
+Looking at the first model from above (rfModl), we can see that the OOB estimate of error rate is 0.81% (99+% accuracy), and mtry=2 was chosen.  Run time was 3 - 4 minutes (Intel Core i5, 8 GB RAM, Windows 8.1)
+
+```{r, echo=TRUE}
+rfModl$finalModel
+```
+
+The accuracy on the cross-validation set was 99.5% as shown by the confusion matrix.  Accuracy on the final validation set (20 cases) was 100% (not shown).  
+
+```{r, echo=TRUE}
+rfCM
+```
+
+Model 2: 
+The second model simply reduces ntree to 100, which reduces the run time to ~ 30 - 40 seconds (same machine and set-up as for Model 1).  OOB estimate of error rate is 0.82% (99+% accuracy), but mtry=27, meaning a different sampling at each split was chosen as the final model (based on accuracy).  
+
+```{r, echo=TRUE}
+rfModl2$finalModel
+```
+
+The accuracy on the cross-validation set was 99.46% as shown by the confusion matrix.  Accuracy on the final validation set (20 cases) was 100% (not shown).  
+
+```{r, echo=TRUE}
+rfCM2
+```  
+
+
+#### Final Thoughts
+The random forest model was my initial model choice.  Since it worked so well, and was quick to execute with the options chosen, it became my final model.  I tried other models such as using k-fold options with "cv" resampling, which required 5 - 10 min to run, but accuracy was lower then random forests.  Another option would be to try gbm or doing pca followed by lda, ls, or other linear method.  If rf had not been so quick and easy, I would have further pursued these other options.
+
+
+
+
+
+#### 
