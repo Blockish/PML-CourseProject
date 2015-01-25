@@ -53,7 +53,7 @@ keep <- colnames(traindata[1:ncol(traindata)-1]) # last column is problem_id
 validation <- validation[,keep]
 ```  
 
-With the data in a tidy form, the training data was split into 2 sets: training (70%) / testing (30%), which provides a way of cross-validating the model and calculating OOB accuracy before predicting on the final validation set.  Also, the random seed was set for reproducibility.  
+With the data in a tidy form, the training data was split into 2 sets: training (70%) / testing (30%), which provides a way of cross-validating the model and calculating out-of-sample (OOB) error / accuracy before predicting on the final validation set.  Also, the random seed was set for reproducibility.  
 
 ```{r, echo=TRUE, results='hide'}
 set.seed(98102)
@@ -86,26 +86,26 @@ rfVal2<- predict(rfModl2, validation)  # Validation set (20 cases)
 #### Results
 
 Model 1: 
-Looking at the first model from above (rfModl), we can see that the OOB estimate of error rate is 0.81% (99+% accuracy), and mtry=2 was chosen.  Run time was 3 - 4 minutes (Intel Core i5, 8 GB RAM, Windows 8.1)
+Looking at the first model from above (rfModl), we can see that the out-of-sample error estimate (OOB estimate of error rate) is 0.81% (99+% accuracy), and mtry=2 was chosen.  Run time was 3 - 4 minutes (Intel Core i5, 8 GB RAM, Windows 8.1)
 
 ```{r, echo=TRUE}
 rfModl$finalModel
 ```
 
-The accuracy on the cross-validation set was 99.5% as shown by the confusion matrix.  Accuracy on the final validation set (20 cases) was 100% (not shown).  
+The measured out-of-sample accuracy on the cross-validation set was 99.5% as shown by the confusion matrix.  Accuracy on the final validation set (20 cases) was 100% (not shown).  
 
 ```{r, echo=TRUE}
 rfCM
 ```
 
 Model 2: 
-The second model simply reduces ntree to 100, which reduces the run time to ~ 30 - 40 seconds (same machine and set-up as for Model 1).  OOB estimate of error rate is 0.82% (99+% accuracy), but mtry=27, meaning a different sampling at each split was chosen as the final model (based on accuracy).  
+The second model simply reduces ntree to 100, which reduces the run time to ~ 30 - 40 seconds (same machine and set-up as for Model 1).  Out-of-sample error estimate (OOB estimate of error rate) is 0.82% (99+% accuracy), but mtry=27, meaning a different sampling at each split was chosen as the final model (based on accuracy).  
 
 ```{r, echo=TRUE}
 rfModl2$finalModel
 ```
 
-The accuracy on the cross-validation set was 99.46% as shown by the confusion matrix.  Accuracy on the final validation set (20 cases) was 100% (not shown).  
+The measured out-of-sample accuracy on the cross-validation set was 99.46% as shown by the confusion matrix.  Accuracy on the final validation set (20 cases) was 100% (not shown).  
 
 ```{r, echo=TRUE}
 rfCM2
