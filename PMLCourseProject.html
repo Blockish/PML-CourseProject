@@ -92,7 +92,7 @@ dim(traindata)</code></pre>
 <p>The features (columns) have been reduced from 160 to 53 (52 predictors + 1 outcome (classe)). For the final validation cases (20), the same columns as above were retained, with the exception that the problem_id column was removed.</p>
 <pre class="r"><code>keep &lt;- colnames(traindata[1:ncol(traindata)-1]) # last column is problem_id
 validation &lt;- validation[,keep]</code></pre>
-<p>With the data in a tidy form, the training data was split into 2 sets: training (70%) / testing (30%), which provides a way of cross-validating the model and calculating OOB accuracy before predicting on the final validation set. Also, the random seed was set for reproducibility.</p>
+<p>With the data in a tidy form, the training data was split into 2 sets: training (70%) / testing (30%), which provides a way of cross-validating the model and calculating out-of-sample (OOB) error / accuracy before predicting on the final validation set. Also, the random seed was set for reproducibility.</p>
 <pre class="r"><code>set.seed(98102)
 inTrain = createDataPartition(traindata$classe, p = 0.7, list=FALSE)
 training = traindata[inTrain,]
@@ -116,7 +116,7 @@ rfVal2&lt;- predict(rfModl2, validation)  # Validation set (20 cases)</code></pr
 </div>
 <div id="results" class="section level4">
 <h4>Results</h4>
-<p>Model 1: Looking at the first model from above (rfModl), we can see that the OOB estimate of error rate is 0.81% (99+% accuracy), and mtry=2 was chosen. Run time was 3 - 4 minutes (Intel Core i5, 8 GB RAM, Windows 8.1)</p>
+<p>Model 1: Looking at the first model from above (rfModl), we can see that the out-of-sample error estimate (OOB estimate of error rate) is 0.81% (99+% accuracy), and mtry=2 was chosen. Run time was 3 - 4 minutes (Intel Core i5, 8 GB RAM, Windows 8.1)</p>
 <pre class="r"><code>rfModl$finalModel</code></pre>
 <pre><code>## 
 ## Call:
@@ -133,7 +133,7 @@ rfVal2&lt;- predict(rfModl2, validation)  # Validation set (20 cases)</code></pr
 ## C    0   27 2316    4    0 0.0132083511
 ## D    0    0   42 2156    5 0.0213345438
 ## E    0    0    0    6 2464 0.0024291498</code></pre>
-<p>The accuracy on the cross-validation set was 99.5% as shown by the confusion matrix. Accuracy on the final validation set (20 cases) was 100% (not shown).</p>
+<p>The measured out-of-sample accuracy on the cross-validation set was 99.5% as shown by the confusion matrix. Accuracy on the final validation set (20 cases) was 100% (not shown).</p>
 <pre class="r"><code>rfCM</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
@@ -166,7 +166,7 @@ rfVal2&lt;- predict(rfModl2, validation)  # Validation set (20 cases)</code></pr
 ## Detection Rate         0.2847   0.1919   0.1735   0.1615   0.1832
 ## Detection Prevalence   0.2847   0.1935   0.1744   0.1638   0.1836
 ## Balanced Accuracy      0.9976   0.9972   0.9926   0.9970   0.9998</code></pre>
-<p>Model 2: The second model simply reduces ntree to 100, which reduces the run time to ~ 30 - 40 seconds (same machine and set-up as for Model 1). OOB estimate of error rate is 0.82% (99+% accuracy), but mtry=27, meaning a different sampling at each split was chosen as the final model (based on accuracy).</p>
+<p>Model 2: The second model simply reduces ntree to 100, which reduces the run time to ~ 30 - 40 seconds (same machine and set-up as for Model 1). Out-of-sample error estimate (OOB estimate of error rate) is 0.82% (99+% accuracy), but mtry=27, meaning a different sampling at each split was chosen as the final model (based on accuracy).</p>
 <pre class="r"><code>rfModl2$finalModel</code></pre>
 <pre><code>## 
 ## Call:
@@ -183,7 +183,7 @@ rfVal2&lt;- predict(rfModl2, validation)  # Validation set (20 cases)</code></pr
 ## C    0   16 2316   15    0 0.013208351
 ## D    0    1   30 2167    5 0.016341353
 ## E    0    3    4    8 2455 0.006072874</code></pre>
-<p>The accuracy on the cross-validation set was 99.46% as shown by the confusion matrix. Accuracy on the final validation set (20 cases) was 100% (not shown).</p>
+<p>The measured out-of-sample accuracy on the cross-validation set was 99.46% as shown by the confusion matrix. Accuracy on the final validation set (20 cases) was 100% (not shown).</p>
 <pre class="r"><code>rfCM2</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
